@@ -18,11 +18,13 @@ export function activate(context: ExtensionContext) {
 		};
 		const quickPick = window.createQuickPick();
 		quickPick.items = Object.keys(options).map(label => ({ label }));
-		quickPick.onDidChangeSelection(selection => {
-			if (selection[0]) {
-				options[selection[0].label](context)
-					.catch(console.error);
-			}
+		quickPick.value = 'Initial value';
+		quickPick.onDidChangeSelection(([selection]) => {
+			window.showInformationMessage(`Your selection was: ${selection && selection.label}`);
+		});
+		quickPick.onDidAccept(() => {
+			window.showInformationMessage(`You entered: ${quickPick.value}`);
+			quickPick.dispose();
 		});
 		quickPick.onDidHide(() => quickPick.dispose());
 		quickPick.show();
