@@ -78,6 +78,9 @@ class CatCodingPanel {
 			getWebviewOptions(extensionUri),
 		);
 
+		const titleIconPathOnDisk = vscode.Uri.joinPath(extensionUri, 'resources', 'menu.svg');
+		panel.iconPath = titleIconPathOnDisk;
+
 		CatCodingPanel.currentPanel = new CatCodingPanel(panel, extensionUri);
 	}
 
