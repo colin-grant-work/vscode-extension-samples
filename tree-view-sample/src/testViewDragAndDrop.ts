@@ -33,6 +33,10 @@ export class TestViewDragAndDrop implements vscode.TreeDataProvider<Node>, vscod
 
 	constructor(context: vscode.ExtensionContext) {
 		const view = vscode.window.createTreeView('testViewDragAndDrop', { treeDataProvider: this, showCollapseAll: true, canSelectMany: true, dragAndDropController: this });
+		context.subscriptions.push(view.onDidChangeSelection(({ selection }) => {
+			vscode.window.showInformationMessage(`That tree view changed selection to ${selection.map(node => node.key)}`);
+			console.log('SENTINEL FOR A CHANGE', selection);
+		}));
 		context.subscriptions.push(view);
 	}
 

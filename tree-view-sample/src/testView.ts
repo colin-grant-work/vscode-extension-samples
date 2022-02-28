@@ -5,6 +5,10 @@ export class TestView {
 	constructor(context: vscode.ExtensionContext) {
 		const view = vscode.window.createTreeView('testView', { treeDataProvider: aNodeWithIdTreeDataProvider(), showCollapseAll: true });
 		context.subscriptions.push(view);
+		context.subscriptions.push(view.onDidChangeSelection(({ selection }) => {
+			vscode.window.showInformationMessage(`That tree view changed selection to ${selection.map(node => node.key)}`);
+			console.log('SENTINEL FOR A CHANGE', selection);
+		}));
 		vscode.commands.registerCommand('testView.reveal', async () => {
 			const key = await vscode.window.showInputBox({ placeHolder: 'Type the label of the item to reveal' });
 			if (key) {
