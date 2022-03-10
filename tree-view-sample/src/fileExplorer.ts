@@ -147,6 +147,7 @@ export class FileStat implements vscode.FileStat {
 interface Entry {
 	uri: vscode.Uri;
 	type: vscode.FileType;
+	withSpec: boolean;
 }
 
 //#endregion
@@ -265,9 +266,22 @@ export class FileSystemProvider implements vscode.TreeDataProvider<Entry>, vscod
 	// tree data provider
 
 	async getChildren(element?: Entry): Promise<Entry[]> {
-		if (element) {
+		if (element?.type === vscode.FileType.Directory) {
 			const children = await this.readDirectory(element.uri);
-			return children.map(([name, type]) => ({ uri: vscode.Uri.file(path.join(element.uri.fsPath, name)), type }));
+			return this.dirToEntries(element.uri.fsPath, children);
+		}
+
+		if (element?.withSpec) {
+			const name = path.basename(element.uri.fsPath);
+			const ext = path.extname(element.uri.fsPath);
+			const base = name.substring(0, name.length - ext.length);
+			const targetName = `${base}.spec.ts`;
+			const parent = path.dirname(element.uri.fsPath);
+			const children = (await this.readDirectory(vscode.Uri.file(parent))).filter(([name]) => name.endsWith(targetName));
+			if (children.length) {
+				return [{uri: vscode.Uri.file(path.join(parent, children[0][0])), type: children[0][1], withSpec: false}];
+			}
+			return [];
 		}
 
 		const workspaceFolder = vscode.workspace.workspaceFolders.filter(folder => folder.uri.scheme === 'file')[0];
@@ -279,14 +293,30 @@ export class FileSystemProvider implements vscode.TreeDataProvider<Entry>, vscod
 				}
 				return a[1] === vscode.FileType.Directory ? -1 : 1;
 			});
-			return children.map(([name, type]) => ({ uri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, name)), type }));
+			return this.dirToEntries(workspaceFolder.uri.path, children); // children.map(([name, type]) => ({ uri: vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, name)), type }));
 		}
 
 		return [];
 	}
 
+	protected dirToEntries(parentPath: string, children: [string, vscode.FileType][]): Entry[] {
+		const specFiles = new Set(children.filter(([name]) => name.endsWith('.spec.ts')).map(([name]) => name.substring(0, name.length - 8)));
+		const result = [];
+		for (const [name, type] of children) {
+			if (type === vscode.FileType.Directory) {
+				result.push({ uri: vscode.Uri.file(path.join(parentPath, name)), type, withSpec: false });
+			} else if (!name.endsWith('.spec.ts')) {
+				const ext = path.extname(name);
+				const base = name.substring(0, name.length - ext.length);
+				const withSpec = specFiles.has(base);
+				result.push({uri: vscode.Uri.file(path.join(parentPath, name)), type, withSpec});
+			}
+		}
+		return result;
+	}
+
 	getTreeItem(element: Entry): vscode.TreeItem {
-		const treeItem = new vscode.TreeItem(element.uri, element.type === vscode.FileType.Directory ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
+		const treeItem = new vscode.TreeItem(element.uri, (element.type === vscode.FileType.Directory || element.withSpec) ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
 		if (element.type === vscode.FileType.File) {
 			treeItem.command = { command: 'fileExplorer.openFile', title: "Open File", arguments: [element.uri], };
 			treeItem.contextValue = 'file';
