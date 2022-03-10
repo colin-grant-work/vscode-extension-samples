@@ -275,11 +275,11 @@ export class FileSystemProvider implements vscode.TreeDataProvider<Entry>, vscod
 			const name = path.basename(element.uri.fsPath);
 			const ext = path.extname(element.uri.fsPath);
 			const base = name.substring(0, name.length - ext.length);
-			const targetName = `${base}.spec.ts`;
+			// const targetName = `${base}.spec.ts`;
 			const parent = path.dirname(element.uri.fsPath);
-			const children = (await this.readDirectory(vscode.Uri.file(parent))).filter(([name]) => name.endsWith(targetName));
+			const children = (await this.readDirectory(vscode.Uri.file(parent))).filter(([name]) => name.startsWith(base));
 			if (children.length) {
-				return [{uri: vscode.Uri.file(path.join(parent, children[0][0])), type: children[0][1], withSpec: false}];
+				return children.map(([name, type]) => ({uri: vscode.Uri.file(path.join(parent, name)), type, withSpec: false}));
 			}
 			return [];
 		}
@@ -309,7 +309,8 @@ export class FileSystemProvider implements vscode.TreeDataProvider<Entry>, vscod
 				const ext = path.extname(name);
 				const base = name.substring(0, name.length - ext.length);
 				const withSpec = specFiles.has(base);
-				result.push({uri: vscode.Uri.file(path.join(parentPath, name)), type, withSpec});
+				const label = withSpec ? base : name;
+				result.push({uri: vscode.Uri.file(path.join(parentPath, label)), type, withSpec});
 			}
 		}
 		return result;
