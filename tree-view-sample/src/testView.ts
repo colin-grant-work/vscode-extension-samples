@@ -17,6 +17,12 @@ export class TestView {
 				view.title = title;
 			}
 		});
+		vscode.commands.registerCommand('parent-item-click', () => {
+			vscode.window.showInformationMessage('You clicked on a one-letter item!');
+		});
+		vscode.commands.registerCommand('child-item-click', () => {
+			vscode.window.showInformationMessage('You clicked on an item with a B!');
+		});
 	}
 }
 
@@ -77,7 +83,11 @@ function getTreeItem(key: string): vscode.TreeItem {
 	return {
 		label: /**vscode.TreeItemLabel**/<any>{ label: key, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 		tooltip,
-		collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+		collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+		contextValue: key.length === 1
+			? 'parent'
+			: key.includes('b')
+				? 'child' : undefined
 	};
 }
 
